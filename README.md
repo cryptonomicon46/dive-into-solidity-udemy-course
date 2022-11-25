@@ -37,3 +37,21 @@ Technical Spec for Lottery contract:
 The `Lottery.sol` contract is full of comments with todo tasks. 
 Please complete all of the todos listed in the comments in the Lottery contract, and then run `npx hardhat test` to check your work. 
 There is a solution lecture at the end of section 2 on Udemy, which explains the contract line by line.
+
+
+
+//Chai matchers
+npm install --save-dev @nomicfoundation/hardhat-chai-matchers
+npm install --save-dev @nomicfoundation/hardhat-network-helpers
+
+
+
+npx hardhat node
+npx hardhat run --network localhost scripts/deploy.ts
+npx hardhat run --network <your-network> scripts/deploy.js
+
+
+hardhat tasks in config or separate file
+
+npx hardhat accounts // after adding the tasks script for accounts in the hardhat config file
+npx hardhat run accounts.js
