@@ -1,28 +1,130 @@
-// const { expect } = require("chai");
-// const { BigNumber } = require("ethers");
-// const { parseEther, formatEther } = require("ethers/lib/utils");
-// const { ethers, waffle } = require("hardhat");
+const { expect } = require("chai");
+const { BigNumber } = require("ethers");
+const { parseEther, formatEther } = require("ethers/lib/utils");
+const { ethers, waffle } = require("hardhat");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 
-
-// describe("Lottery Contract", function () {
+describe("Lottery Contract", function () {
 //   let owner, addr1, addr2, lottery;
 //   let provider = waffle.provider;
 
-//   beforeEach(async () => {
-//     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-//     const Lottery = await ethers.getContractFactory("Lottery");
+  async function deployLotteryFixture() {
+    const LotteryFactory = await ethers.getContractFactory("Lottery");
+    [owner, addr1, addr2,addr3, ...addrs] = await ethers.getSigners();
+    const lottery = await LotteryFactory.connect(owner).deploy();
+    return {LotteryFactory,lottery, owner, addr1, addr2,addr3};
 
-//     // Hardhat always deploys with the first address from getSigners(), but we'll be explicit here
-//     lottery = await Lottery.connect(owner).deploy();
-//   });
+    console.log("Contract deployed at ", contract.address);
+  }
+
+  beforeEach(async () => {
+    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    // const Lottery = await ethers.getContractFactory("Lottery");
+
+    // Hardhat always deploys with the first address from getSigners(), but we'll be explicit here
+    // lottery = await Lottery.connect(owner).deploy();
+  });
 
 //   describe("Only owner", () => {
-//     it("Only owner can pick a winner", async () => {
-//       await expect(lottery.connect(addr1).pickWinner()).to.be.revertedWith(
-//         "ONLY_OWNER"
-//       );
-//     });
+    it("Only owner can pick a winner", async () => {
+        const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
+
+      await expect(lottery.connect(addr1).pickWinner()).to.be.revertedWith(
+        "ONLY_OWNER"
+      );
+       
+    });
+
+
+
+    it("Check for invalid entry fee", async() => {
+        const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
+        await expect(addr1.sendTransaction({to: lottery.address, value: parseEther("2")})).
+        to.be.revertedWith("INVALID_ENTRY_FEE");
+    })
+
+    it("Allow a valid entry fee", async() => {
+        const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
+        await (addr1.sendTransaction({to: lottery.address, value: parseEther("0.1")}));
+        // .not.to.be.reverted;
+        // const cont_bal = await ethers.provider.getBalance(lottery.address);
+
+        let contract_bal = await lottery.connect(owner).getBalance();
+        expect(contract_bal).to.be.equal(parseEther("0.1"));
+
+    })
+
+
+    it("Can't pick a winner with insufficient players", async()=> {
+        const {LotteryFactory,lottery,owner, addr1, addr2,addr3} = await loadFixture(deployLotteryFixture);
+        await (addr1.sendTransaction({to: lottery.address, value: parseEther("0.1")}));
+        await (addr1.sendTransaction({to: lottery.address, value: parseEther("0.1")}));
+        await expect(lottery.connect(owner).pickWinner()).to.be.revertedWith("NOT_ENOUGH_PLAYERS");
+
+
+    });
+    
+    it("Can pick a winner with sufficient players", async()=> {
+        const {LotteryFactory,lottery,owner, addr1, addr2,addr3} = await loadFixture(deployLotteryFixture);
+
+        for ( i =1; i<4 ; i++) {
+            await addrs[i].sendTransaction({
+                to: lottery.address,
+                value: parseEther("0.1")
+            })
+        }
+        let contract_bal = await lottery.getBalance();
+        expect(contract_bal).to.equal(parseEther("0.3")); 
+
+    });
+
+    it("Playing...", async()=> {
+        const {LotteryFactory,lottery,owner, addr1, addr2,addr3} = await loadFixture(deployLotteryFixture);
+
+        for ( i =0; i<=3 ; i++) {
+            await addrs[i].sendTransaction({
+                to: lottery.address,
+                value: parseEther("0.1")
+            })
+        }
+        // console.log("addresses\n",addrs.slice(0,3).map(p => p.address));
+        const addrs_ = addrs.slice(0,3).map(p => p.address);
+   
+
+        await expect(lottery.connect(owner).pickWinner()).not.to.be.reverted;
+        
+        const winner = await lottery.gameWinners(0);
+        console.log(addrs_);
+        expect(addrs_).to.deep.include(winner);
+        const winner_balance = await ethers.provider.getBalance(winner);
+
+ 
+        expect(winner_balance.gt(BigNumber.from(parseEther("10000")))).to.be.true;
+        // Expect that players array is empty
+        expect(await lottery.players.length).to.be.equal(0);
+        
+
+
+
+    });
+
+
+    // it("Check for valid entry fee and contract balance", async() => {
+    //     const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
+    //    await addr1.sendTransaction({to: lottery.address, value: 0.1})
+    //     // await expect(addr1.sendTransaction({to: lottery.address, value: ethers.0.1})).
+    //     // not.to.be.reverted; 
+    //     // await expect(addr2.sendTransaction({to: lottery.address, value: 0.1})).
+    //     // not.to.be.reverted; 
+    //     // await expect(addr3.sendTransaction({to: lottery.address, value: 0.1})).
+    //     // not.to.be.reverted; 
+
+    //     // await expect(contract.connect(owner).getBalance).to.equal(0.3);
+        // await expect(contract.connnect(addr1).getBalance).to.be.revertedWith("ONLY_OWNER");
+    // })
+
+
 
 //     it("Only owner can call getBalance", async () => {
 //       await expect(lottery.connect(addr1).getBalance()).to.be.revertedWith(
@@ -102,4 +204,4 @@
 //       expect(await lottery.players.length).to.be.equal(0);
 //     });
 //   });
-// });
+});
