@@ -9,6 +9,12 @@ contract Lottery {
     address[] public gameWinners;
     address public owner;
 
+    event NewEntry(address _account);
+    event WinnerPicked(address _winner);
+    event Transfer(address _to, uint amount);
+    event GameReset();
+
+
     // declaring the constructor
     constructor() payable {
         // TODO: initialize the owner to the address that deploys the contract
@@ -21,6 +27,7 @@ contract Lottery {
         // TODO: append the new player to the players array
         require(msg.value == 0.1 ether,"INVALID_ENTRY_FEE");
         players.push(msg.sender);
+        emit NewEntry(msg.sender);
         // console.log("Entry Address: ",msg.sender);
         // console.log("Players length:",players.length);
 
@@ -48,7 +55,7 @@ contract Lottery {
         require(players.length >=3,"NOT_ENOUGH_PLAYERS");
         require(!_lock,"REENTRANCY_ATTACK!");
         _lock = true;
-        console.log("Hold on sir, picking winners...!");
+        console.log("Picking winners...!");
 
         uint256 r = random();
         address winner;
@@ -56,6 +63,7 @@ contract Lottery {
         // TODO: compute an unsafe random index of the array and assign it to the winner variable 
 
          winner = players[r % players.length];
+         emit WinnerPicked(winner);
         //  console.log(players.length);
         //  console.log("Winner Number: ", r % players.length);
         // console.log("Winner:", winner);

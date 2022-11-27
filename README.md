@@ -43,6 +43,7 @@ There is a solution lecture at the end of section 2 on Udemy, which explains the
 //Chai matchers
 npm install --save-dev @nomicfoundation/hardhat-chai-matchers
 npm install --save-dev @nomicfoundation/hardhat-network-helpers
+npm install --save-dev @nomicfoundation/hardhat-toolbox
 
 
 

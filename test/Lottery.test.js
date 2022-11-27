@@ -38,7 +38,7 @@ describe("Lottery Contract", function () {
 
 
 
-    it("Check for invalid entry fee", async() => {
+    it("Check for invalid entry fee and emit event", async() => {
         const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
         await expect(addr1.sendTransaction({to: lottery.address, value: parseEther("2")})).
         to.be.revertedWith("INVALID_ENTRY_FEE");
@@ -46,9 +46,10 @@ describe("Lottery Contract", function () {
 
     it("Allow a valid entry fee", async() => {
         const {LotteryFactory,lottery,owner, addr1,addr2,addr3} = await loadFixture(deployLotteryFixture);
-        await (addr1.sendTransaction({to: lottery.address, value: parseEther("0.1")}));
+        let tx =  await expect(addr1.sendTransaction({to: lottery.address, value: parseEther("0.1")}));
+      
         // .not.to.be.reverted;
-        // const cont_bal = await ethers.provider.getBalance(lottery.address);
+        const cont_bal = await ethers.provider.getBalance(lottery.address);
 
         let contract_bal = await lottery.connect(owner).getBalance();
         expect(contract_bal).to.be.equal(parseEther("0.1"));
@@ -89,15 +90,21 @@ describe("Lottery Contract", function () {
             })
         }
         // console.log("addresses\n",addrs.slice(0,3).map(p => p.address));
-        const addrs_ = addrs.slice(0,3).map(p => p.address);
+        const addrs_ = addrs.slice(0,4).map(p => p.address);
    
 
-        await expect(lottery.connect(owner).pickWinner()).not.to.be.reverted;
-        
+        // await expect(lottery.connect(owner).pickWinner()).not.to.be.reverted;
+        await expect(lottery.connect(owner).pickWinner())
+        .to.emit(lottery,"WinnerPicked");
+        // .withArgs((await lottery.gameWinners(0)).address);
+
         const winner = await lottery.gameWinners(0);
-        console.log(addrs_);
-        expect(addrs_).to.deep.include(winner);
+        // console.log(addrs_);
+        expect(addrs_).to.include.include(winner);
         const winner_balance = await ethers.provider.getBalance(winner);
+        console.log("Winner Address:",winner);
+        console.log("Winner balance in Big Number:", winner_balance);
+        console.log("Winner balance in ETH", ethers.utils.formatEther(winner_balance),"ETH");
 
  
         expect(winner_balance.gt(BigNumber.from(parseEther("10000")))).to.be.true;
